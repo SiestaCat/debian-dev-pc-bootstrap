@@ -1,24 +1,25 @@
 # Debian Dev PC Bootstrap Installation
 
-This guide walks you through setting up a Debian-based personal PC with various tools and applications. It covers everything from configuring `vi` to installing development and productivity apps.
+This guide walks you through setting up a Debian-based personal PC with various tools and system configurations. It covers everything from configuring `vi` to enabling hibernate and installing useful applications.
 
 ---
 
 ## Table of Contents
 
-1. [Enable INSERT in vi](#1-enable-insert-in-vi)
-2. [Configure Sudo Access](#2-configure-sudo-access)
-3. [System Update](#3-system-update)
-4. [Disable IPv6](#4-disable-ipv6)
-5. [Setup SSH Keys](#5-setup-ssh-keys)
-6. [Install Applications](#6-install-applications)
+1. [Enable INSERT in vi](#enable-insert-in-vi)
+2. [Configure Sudo Access](#configure-sudo-access)
+3. [System Update](#system-update)
+4. [Disable IPv6](#disable-ipv6)
+5. [Setup SSH Keys](#setup-ssh-keys)
+6. [Enable Hibernate](#enable-hibernate)
+7. [Install Applications](#install-applications)
     - [Sublime Text](#sublime-text)
     - [PHP](#php)
     - [Heroku CLI](#heroku-cli)
     - [Additional Tools](#additional-tools)
     - [Visual Studio Code](#visual-studio-code)
     - [Other Applications](#other-applications)
-7. [Clean Up](#7-clean-up)
+8. [Clean Up](#clean-up)
 
 ---
 
@@ -35,7 +36,7 @@ sudo apt-get install vim-gui-common -y
 
 ## 2. Configure Sudo Access
 
-Add your user to the sudoers file to allow administrative commands without switching users. Open `/etc/sudoers` with your favorite editor (use `visudo` if possible) and add:
+Add your user to the sudoers file to allow administrative commands without switching users. Open `/etc/sudoers` with your favorite editor (using `visudo` is recommended) and add:
 
 ```text
 my_username ALL=(ALL:ALL) ALL
@@ -57,7 +58,7 @@ sudo apt update -y && sudo apt full-upgrade -y
 
 ## 4. Disable IPv6
 
-*Instructions for disabling IPv6 have not been provided in detail here. Please consult your system documentation or online guides for the proper steps.*
+*Instructions for disabling IPv6 are not detailed here. Please consult your system documentation or online resources for the correct steps.*
 
 ---
 
@@ -65,7 +66,7 @@ sudo apt update -y && sudo apt full-upgrade -y
 
 If you need to manage SSH keys:
 
-1. **Edit/Create your private key (if necessary):**
+1. **Edit or create your private key (if necessary):**
 
     ```bash
     vi ~/.ssh/id_rsa
@@ -85,7 +86,115 @@ If you need to manage SSH keys:
 
 ---
 
-## 6. Install Applications
+## 6. Enable Hibernate
+
+To enable hibernate functionality on your system, follow these steps:
+
+### 6.1 Adjust Swappiness
+
+Set the swappiness to a low value (1) to favor hibernation over swap usage:
+
+```bash
+sudo sysctl -w vm.swappiness=1
+```
+
+To make this change permanent, edit (or create) the local sysctl configuration file:
+
+```bash
+sudo vi /etc/sysctl.d/local.conf
+```
+
+Add the following line:
+
+```
+vm.swappiness=1
+```
+
+### 6.2 Create and Configure Swapfile
+
+Create a 15G swapfile, set the appropriate permissions, and initialize it:
+
+```bash
+sudo fallocate -l 15G /swapfile
+sudo chmod 600 /swapfile
+mkswap /swapfile
+sudo swapon /swapfile
+```
+
+Make the swapfile persistent by adding it to `/etc/fstab`:
+
+```bash
+echo '/swapfile none swap sw 0 0' | sudo tee -a /etc/fstab
+```
+
+### 6.3 Configure Hibernate Boot Parameters
+
+You will need to determine your system’s root UUID and the swapfile offset:
+
+- **Find the UUID:**
+
+  ```bash
+  findmnt / -o UUID -n
+  ```
+
+- **Find the swapfile offset:**
+
+  ```bash
+  sudo filefrag -v /swapfile | awk 'NR==4{gsub(/\./,""); print $4;}'
+  ```
+
+With your UUID and swapfile offset in hand, update the bootloader and initramfs configurations:
+
+1. **Update GRUB:**
+
+   Edit `/etc/default/grub`:
+
+   ```bash
+   sudo vi /etc/default/grub
+   ```
+
+   Append or modify the `GRUB_CMDLINE_LINUX_DEFAULT` line to include the resume parameters (replace the example UUID and offset with your actual values):
+
+   ```
+   GRUB_CMDLINE_LINUX_DEFAULT="resume=UUID=178f7336-5875-40bc-be93-58dca79a49dc resume_offset=58673152"
+   ```
+
+2. **Configure initramfs resume settings:**
+
+   Edit (or create) the resume configuration file:
+
+   ```bash
+   sudo vi /etc/initramfs-tools/conf.d/resume
+   ```
+
+   Add the following line (again, replace the example UUID with your actual UUID):
+
+   ```
+   RESUME=UUID=178f7336-5875-40bc-be93-58dca79a49dc
+   ```
+
+### 6.4 Update Bootloader and Initramfs
+
+Apply the changes by updating GRUB and the initramfs:
+
+```bash
+sudo update-grub
+sudo update-initramfs -k all -u
+```
+
+### 6.5 Test Hibernate
+
+Test the hibernate function with:
+
+```bash
+systemctl hibernate
+```
+
+> **Note:** Replace the example UUID (`178f7336-5875-40bc-be93-58dca79a49dc`) and offset (`58673152`) with the values obtained from your system.
+
+---
+
+## 7. Install Applications
 
 ### Sublime Text
 
@@ -99,7 +208,7 @@ sudo apt update -y && sudo apt install sublime-text -y
 
 ### PHP
 
-Install PHP without the recommended extra packages:
+Install PHP without extra recommended packages:
 
 ```bash
 sudo apt install php --no-install-recommends -y
@@ -165,16 +274,14 @@ For additional software, refer to the following resources or their official inst
 - **Studio 3T**
 - **Android Studio**
 
-> **Note:** Installation steps for Docker, Studio 3T, and Android Studio are not included in this guide. Please consult their official documentation for setup instructions.
+> **Note:** Installation steps for Docker, Studio 3T, and Android Studio are not included here. Please consult their official documentation for setup instructions.
 
 ---
 
-## 7. Clean Up
+## 8. Clean Up
 
 Remove any unnecessary packages to keep your system tidy:
 
 ```bash
 sudo apt autoremove -y
 ```
-
----
