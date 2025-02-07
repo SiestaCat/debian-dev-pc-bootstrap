@@ -1,6 +1,6 @@
 # Debian Dev PC Bootstrap Installation
 
-This guide walks you through setting up a Debian-based personal PC with various tools and system configurations. It covers everything from configuring `vi` to enabling hibernate and installing useful applications.
+This guide walks you through setting up a Debian-based personal PC with various system configurations and applications. It covers everything from configuring `vi` to enabling hibernate, setting DNS resolvers, preserving your Bash history, and installing useful applications.
 
 ---
 
@@ -19,7 +19,10 @@ This guide walks you through setting up a Debian-based personal PC with various 
     - [Additional Tools](#additional-tools)
     - [Visual Studio Code](#visual-studio-code)
     - [Other Applications](#other-applications)
-8. [Clean Up](#clean-up)
+8. [Additional Configuration](#additional-configuration)
+    - [Set DNS](#set-dns)
+    - [Preserve Bash History](#preserve-bash-history)
+9. [Clean Up](#clean-up)
 
 ---
 
@@ -167,7 +170,7 @@ With your UUID and swapfile offset in hand, update the bootloader and initramfs 
    sudo vi /etc/initramfs-tools/conf.d/resume
    ```
 
-   Add the following line (again, replace the example UUID with your actual UUID):
+   Add the following line (replace the example UUID with your actual UUID):
 
    ```
    RESUME=UUID=178f7336-5875-40bc-be93-58dca79a49dc
@@ -278,7 +281,43 @@ For additional software, refer to the following resources or their official inst
 
 ---
 
-## 8. Clean Up
+## 8. Additional Configuration
+
+This section covers extra configuration steps for setting DNS resolvers and preserving your Bash history.
+
+### 8.1 Set DNS
+
+Reset your DNS configuration and add preferred nameservers:
+
+```bash
+sed -i '/nameserver/d' /etc/resolv.conf
+echo "nameserver 1.1.1.1" | sudo tee -a /etc/resolv.conf
+echo "nameserver 8.8.8.8" | sudo tee -a /etc/resolv.conf
+```
+
+> **Note:** This removes existing nameserver entries in `/etc/resolv.conf` and adds Cloudflare (`1.1.1.1`) and Google (`8.8.8.8`) DNS servers. Adjust as necessary.
+
+### 8.2 Preserve Bash History
+
+Ensure that your Bash history is preserved across sessions by appending the following lines to your `~/.bashrc`:
+
+```bash
+echo 'shopt -s histappend' >> ~/.bashrc
+echo 'PROMPT_COMMAND="history -a; $PROMPT_COMMAND"' >> ~/.bashrc
+source ~/.bashrc
+```
+
+The `source ~/.bashrc` command reloads your Bash configuration immediately. The final `exit` command (if desired) will end your current session:
+
+```bash
+exit
+```
+
+> **Note:** Use `exit` only when you are finished configuring your shell or if you wish to log out.
+
+---
+
+## 9. Clean Up
 
 Remove any unnecessary packages to keep your system tidy:
 
