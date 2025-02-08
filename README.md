@@ -217,20 +217,20 @@ Install PHP without extra recommended packages:
 sudo apt install php --no-install-recommends -y
 ```
 
+### Additional Tools
+
+Install a collection of useful tools and applications:
+
+```bash
+sudo apt install curl vlc gimp ffmpeg nodejs npm apt-transport-https filezilla python3-pip python3-venv -y
+```
+
 ### Heroku CLI
 
 Install the Heroku Command Line Interface:
 
 ```bash
 curl https://cli-assets.heroku.com/install-ubuntu.sh | sh
-```
-
-### Additional Tools
-
-Install a collection of useful tools and applications:
-
-```bash
-sudo apt install curl vlc gimp ffmpeg nodejs npm apt-transport-https filezilla python3-pip -y
 ```
 
 ### Visual Studio Code
